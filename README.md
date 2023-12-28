@@ -1,17 +1,17 @@
 
- Flight Reservation System
+# Flight Reservation System
 
-This Django project provides a simple flight reservation system with RESTful API endpoints. The system allows users to view available flights, make reservations, and manage their reservation history.
+### This Django project provides a simple flight reservation system with RESTful API endpoints. The system allows users to view available flights, make reservations, and manage their reservation history.
 
-Models
-Flight Model (flights.models.Flight):
+# Models
+## Flight Model (flights.models.Flight):
 
-Represents a flight with attributes such as departure_city, destination_city, departure_date, arrival_date, and price.
-TicketReservation Model (flights.models.TicketReservation):
+### Represents a flight with attributes such as departure_city, destination_city, departure_date, arrival_date, and price.
+## TicketReservation Model (flights.models.TicketReservation):
 
-Represents a user's reservation with attributes like user, flight, passenger_name, passenger_email, reservation_date, number_of_passengers, payment_info, and booking_confirmation.
-API Endpoints
-Get Flights (GET /api/flights/):
+### Represents a user's reservation with attributes like user, flight, passenger_name, passenger_email, reservation_date, number_of_passengers, payment_info, and booking_confirmation.
+## API Endpoints
+## Get Flights (GET /api/flights/):
 
 Retrieves a list of available flights.
 Get Reservations (GET /api/reservations/):
