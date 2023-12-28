@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation Confirmation</title>
+</head>
+<body>
+    <h1>Reservation Confirmation</h1>
+    <p>شكرًا لحجز تذكرتك. رقم الحجز: {{ reservation.id }}.</p>
+    <p>Details:</p>
+    <ul>
+        <li>Passenger Name: {{ reservation.passenger_name }}</li>
+        <li>Flight: {{ reservation.flight.departure_city }} to {{ reservation.flight.destination_city }}</li>
+        <li>Number of Passengers: {{ reservation.number_of_passengers }}</li>
+        <!-- Add more details as needed -->
+    </ul>
+    <p>Thank you for choosing our service!</p>
+</body>
+</html>
