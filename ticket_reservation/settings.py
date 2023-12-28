@@ -28,7 +28,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
-# Application definition
+ 
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -79,8 +79,7 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=60),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
-
-# Authentication settings
+ 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -123,9 +122,9 @@ MIDDLEWARE = [
  
 
 
-# settings.py
+ 
 CELERY_BROKER_URL = 'redis://localhost:6379/0' 
-# Email configuration for Gmail
+ 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -138,7 +137,7 @@ SERVER_EMAIL = 'riad52166@gmail.com'
 
  
 
- # settings.py
+ 
 
 import os
 

@@ -1,7 +1,5 @@
 from django.db import models
- 
 from django.conf import settings
- 
 
 class Flight(models.Model):
     departure_city = models.CharField(max_length=100, verbose_name="Departure City")
@@ -12,8 +10,6 @@ class Flight(models.Model):
 
     def __str__(self):
         return f"{self.departure_city} to {self.destination_city}"
-
- 
 
 class TicketReservation(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="User")

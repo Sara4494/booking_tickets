@@ -7,7 +7,8 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
+from paypalrestsdk import Payment
 
 @api_view(['GET'])
 def get_flights(request):
@@ -49,14 +50,13 @@ class FlightListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = Flight.objects.all()
 
-        # Query Parameters
+  
         departure_city = self.request.query_params.get('departure_city', None)
         destination_city = self.request.query_params.get('destination_city', None)
         min_price = self.request.query_params.get('min_price', None)
         max_price = self.request.query_params.get('max_price', None)
         departure_date = self.request.query_params.get('departure_date', None)
-
-        # Filtering the results based on query parameters
+ 
         if departure_city:
             queryset = queryset.filter(departure_city=departure_city)
         if destination_city:
@@ -287,13 +287,7 @@ def modify_reservation(request, reservation_id):
 
 
  
-
-from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from paypalrestsdk import Payment
-from .models import TicketReservation  # Import your TicketReservation model
-
+ 
 @api_view(['POST'])
 def initiate_paypal_payment(request, reservation_id):
     reservation = get_object_or_404(TicketReservation, id=reservation_id)
@@ -304,8 +298,8 @@ def initiate_paypal_payment(request, reservation_id):
             "payment_method": "paypal",
         },
          "redirect_urls": {
-        "return_url": "http://yourdomain.com/api/paypal/payment-success/",  # Use the correct URL
-        "cancel_url": "http://yourdomain.com/api/paypal/payment-cancel/",  # Use the correct URL
+        "return_url": "http://yourdomain.com/api/paypal/payment-success/",   
+        "cancel_url": "http://yourdomain.com/api/paypal/payment-cancel/",  
         },
         "transactions": [{
             "item_list": {
@@ -314,19 +308,19 @@ def initiate_paypal_payment(request, reservation_id):
                     "sku": "reservation",
                     "quantity": reservation.number_of_passengers,
                     "price": str(reservation.flight.price),
-                    "currency": "USD",  # Change to your preferred currency
+                    "currency": "USD",   
                 }],
             },
             "amount": {
                 "total": str(reservation.flight.price * reservation.number_of_passengers),
-                "currency": "USD",  # Change to your preferred currency
+                "currency": "USD",  
             },
             "description": "Flight Reservation Payment",
         }],
     })
 
     if payment.create():
-        # Save the reservation ID in the session
+         
         request.session['reservation_id'] = reservation_id
         return Response({"payment_url": payment.links[1].href})
     else:
@@ -341,11 +335,10 @@ def paypal_payment_success(request):
     payment = Payment.find(payment_id)
 
     if payment.execute({"payer_id": payer_id}):
-        # Payment was successful
-        reservation_id = request.session.get('reservation_id')  # Retrieve the reservation ID from the session
+        
+        reservation_id = request.session.get('reservation_id')   
         reservation = get_object_or_404(TicketReservation, id=reservation_id)
-
-        # Update reservation status, send confirmation emails, etc.
+ 
         reservation.booking_confirmation = True
         reservation.save()
 
@@ -355,5 +348,5 @@ def paypal_payment_success(request):
 
 @api_view(['GET'])
 def paypal_payment_cancel(request):
-    # Payment was canceled
+  
     return Response({"message": "Payment canceled. Reservation not confirmed."})
