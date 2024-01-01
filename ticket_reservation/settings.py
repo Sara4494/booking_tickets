@@ -86,6 +86,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
          'rest_framework.authentication.TokenAuthentication',
+      
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -139,14 +140,12 @@ SERVER_EMAIL = 'riad52166@gmail.com'
 
  
 
-import os
-
-PAYPAL_CLIENT_ID = os.environ.get("AY40U2bOk29_l3TdcuCniVe8EiGWRNlbemNN-QTrhx6Gg4CYUeLxZxwL-2C_eVpjuhd5Mz2UumRxLIr2")
-PAYPAL_CLIENT_SECRET = os.environ.get("EMoGQmjwIbWxcLyxf0eYDJmU2ZFC2Zrl-bq6HODHIrz2rzYNOXca3yerLmdowGvF2vg_wHsPF73IekEN")
-
-PAYPAL_MODE = "sandbox"   
-
-
+import paypalrestsdk
+paypalrestsdk.configure({
+  "mode": "sandbox", # sandbox or live
+  "client_id": "AY40U2bOk29_l3TdcuCniVe8EiGWRNlbemNN-QTrhx6Gg4CYUeLxZxwL-2C_eVpjuhd5Mz2UumRxLIr2",
+  "client_secret": "EMoGQmjwIbWxcLyxf0eYDJmU2ZFC2Zrl-bq6HODHIrz2rzYNOXca3yerLmdowGvF2vg_wHsPF73IekEN" })
+ 
  
 ROOT_URLCONF = 'ticket_reservation.urls'
 

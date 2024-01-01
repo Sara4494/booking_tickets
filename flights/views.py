@@ -287,19 +287,21 @@ def modify_reservation(request, reservation_id):
 
 
  
- 
+from rest_framework.decorators import permission_classes
+from rest_framework.permissions import IsAuthenticated
 @api_view(['POST'])
 def initiate_paypal_payment(request, reservation_id):
-    reservation = get_object_or_404(TicketReservation, id=reservation_id)
+    user = request.user
+    reservation = get_object_or_404(TicketReservation, id=reservation_id, user=user)
 
     payment = Payment({
         "intent": "sale",
         "payer": {
             "payment_method": "paypal",
         },
-         "redirect_urls": {
-        "return_url": "http://yourdomain.com/api/paypal/payment-success/",   
-        "cancel_url": "http://yourdomain.com/api/paypal/payment-cancel/",  
+        "redirect_urls": {
+            "return_url": "http://localhost:8000/api/paypal/payment-success/",   
+            "cancel_url": "http://localhost:8000/api/paypal/payment-cancel/",  
         },
         "transactions": [{
             "item_list": {
@@ -320,33 +322,39 @@ def initiate_paypal_payment(request, reservation_id):
     })
 
     if payment.create():
-         
         request.session['reservation_id'] = reservation_id
         return Response({"payment_url": payment.links[1].href})
     else:
         return Response({"error": payment.error})
-
 
 @api_view(['GET'])
 def paypal_payment_success(request):
     payment_id = request.query_params.get('paymentId')
     payer_id = request.query_params.get('PayerID')
 
-    payment = Payment.find(payment_id)
-
-    if payment.execute({"payer_id": payer_id}):
+    try:
+        payment = Payment.find(payment_id)
         
-        reservation_id = request.session.get('reservation_id')   
-        reservation = get_object_or_404(TicketReservation, id=reservation_id)
- 
-        reservation.booking_confirmation = True
-        reservation.save()
+        if payment.state == 'created' or payment.state == 'approved':
+            if payment.execute({"payer_id": payer_id}):
+                reservation_id = request.session.get('reservation_id')   
+                reservation = get_object_or_404(TicketReservation, id=reservation_id)
+                
+                reservation.booking_confirmation = True
+                reservation.save()
 
-        return Response({"message": "Payment successful. Reservation confirmed."})
-    else:
-        return Response({"error": payment.error})
+                return Response({"message": "Payment successful. Reservation confirmed."})
+            else:
+                # Print detailed PayPal error information
+                print(f"PayPal error details: {payment.error}")
+                return Response({"error": f"Failed to execute payment. PayPal error: {payment.error}"})
+        else:
+            return Response({"error": "Payment is not in a valid state for execution."})
+    except Exception as e:
+        # Print general exception information
+        print(f"Exception in PayPal payment execution: {str(e)}")
+        return Response({"error": "Failed. Check server logs for details."})
 
 @api_view(['GET'])
 def paypal_payment_cancel(request):
-  
     return Response({"message": "Payment canceled. Reservation not confirmed."})

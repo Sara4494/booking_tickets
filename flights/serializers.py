@@ -13,12 +13,14 @@ class FlightSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flight
         fields = '__all__'
-
-
 class TicketReservationSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = TicketReservation
-        fields = '__all__'
- 
+        fields = ['id', 'user', 'passenger_name', 'passenger_email', 'reservation_date', 'number_of_passengers', 'payment_info', 'booking_confirmation', 'flight']
+
+    def create(self, validated_data):
+        user = self.context.get('request').user
+        validated_data['user'] = user
+        return super().create(validated_data)
