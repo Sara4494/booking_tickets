@@ -150,6 +150,7 @@ class UserLoginView(generics.CreateAPIView):
 
 
 class UserLogoutView(generics.CreateAPIView):
+    serializer_class = CustomUserSerializer   
     def create(self, request, *args, **kwargs):
         try:
             logout(request)
@@ -162,9 +163,8 @@ class UserLogoutView(generics.CreateAPIView):
                 'status': 'error',
                 'message': f'Error logging out: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 class UserRegisterView(generics.CreateAPIView):
-    serializer_class = UserCreationForm
+    serializer_class = CustomUserSerializer  
 
     def create(self, request, *args, **kwargs):
         try:
@@ -175,7 +175,7 @@ class UserRegisterView(generics.CreateAPIView):
             return Response({
                 'status': 'success',
                 'message': 'User registered and logged in successfully',
-                'data': CustomUserSerializer(user).data
+                'data': serializer.data
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({

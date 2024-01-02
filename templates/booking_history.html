@@ -1,0 +1,36 @@
+ 
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Booking History</title>
+</head>
+<body>
+
+<h1>Booking History</h1>
+ 
+<table border="1">
+    <tr>
+        <th>Reservation ID</th>
+        <th>Passenger Name</th>
+        <th>Passenger Email</th>
+        <th>Reservation Date</th>
+        <th>Number of Passengers</th>
+        <th>Flight</th>
+        <th>Booking Confirmation</th>
+    </tr>
+    {% for booking in bookings %}
+    <tr>
+        <td>{{ booking.id }}</td>
+        <td>{{ booking.passenger_name }}</td>
+        <td>{{ booking.passenger_email }}</td>
+        <td>{{ booking.reservation_date }}</td>
+        <td>{{ booking.number_of_passengers }}</td>
+        <td>{{ booking.flight }}</td>
+        <td>{% if booking.booking_confirmation %}Confirmed{% else %}Pending{% endif %}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

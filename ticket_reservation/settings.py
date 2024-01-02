@@ -117,7 +117,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',  
     #'allauth.socialaccount.middleware.SocialAccountMiddleware',   
-    'flights.middleware.CustomExceptionHandlerMiddleware', 
+    #'flights.middleware.CustomExceptionHandlerMiddleware', 
 
 ] 
  
@@ -167,7 +167,7 @@ TEMPLATES = [
 
 #WSGI_APPLICATION = 'ticket_reservation.wsgi.application'
 
-WSGI_APPLICATION = 'ticket_reservation.wsgi.application'
+DJANGO_SETTINGS_MODULE = 'ticket_reservation.wsgi.application'
 ASGI_APPLICATION = "ticket_reservation.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases

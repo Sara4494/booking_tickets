@@ -2,13 +2,17 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status ,generics
 from .models import Flight, TicketReservation
-from .serializers import FlightSerializer, TicketReservationSerializer
+from .serializers import *
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import get_object_or_404, render
 from paypalrestsdk import Payment
+from rest_framework.views import APIView
+ 
+from rest_framework.decorators import permission_classes
+from rest_framework.permissions import IsAuthenticated
 
 @api_view(['GET'])
 def get_flights(request):
@@ -43,6 +47,8 @@ def get_reservations(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
  
+ 
+ 
 
 class FlightListCreateView(generics.ListCreateAPIView):
     serializer_class = FlightSerializer
@@ -50,17 +56,18 @@ class FlightListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = Flight.objects.all()
 
-  
+        # استخدام Query Parameters لتحديد المعايير
         departure_city = self.request.query_params.get('departure_city', None)
         destination_city = self.request.query_params.get('destination_city', None)
         min_price = self.request.query_params.get('min_price', None)
         max_price = self.request.query_params.get('max_price', None)
         departure_date = self.request.query_params.get('departure_date', None)
- 
+
+        # تصفية النتائج بناءً على المعايير المحددة
         if departure_city:
-            queryset = queryset.filter(departure_city=departure_city)
+            queryset = queryset.filter(departure_airport__city=departure_city)
         if destination_city:
-            queryset = queryset.filter(destination_city=destination_city)
+            queryset = queryset.filter(arrival_airport__city=destination_city)
         if min_price:
             queryset = queryset.filter(price__gte=min_price)
         if max_price:
@@ -134,6 +141,7 @@ class FlightDetailView(generics.RetrieveUpdateDestroyAPIView):
                 'status': 'error',
                 'message': f'Error deleting flight: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class TicketReservationListCreateView(generics.ListCreateAPIView):
     queryset = TicketReservation.objects.all()
@@ -232,6 +240,28 @@ def custom_error_page(request, exception=None):
 
  
  
+class UserBookingsView(APIView):
+    def get(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+            reservations = TicketReservation.objects.filter(user=user)
+            serializer = TicketReservationSerializer(reservations, many=True)
+            return Response({
+                'status': 'success',
+                'message': 'User bookings retrieved successfully',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': f'Error retrieving user bookings: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def booking_history(request):
+    
+    return render(request, 'booking_history.html')
+ 
+
 
 @api_view(['GET'])
 def view_reservation_history(request):
@@ -286,13 +316,14 @@ def modify_reservation(request, reservation_id):
         }, status=status.HTTP_404_NOT_FOUND)
 
 
- 
-from rest_framework.decorators import permission_classes
-from rest_framework.permissions import IsAuthenticated
 @api_view(['POST'])
 def initiate_paypal_payment(request, reservation_id):
     user = request.user
     reservation = get_object_or_404(TicketReservation, id=reservation_id, user=user)
+
+    flight = reservation.flight
+    if not flight:
+        return Response({"error": "Flight information not found for the reservation."})
 
     payment = Payment({
         "intent": "sale",
@@ -300,21 +331,21 @@ def initiate_paypal_payment(request, reservation_id):
             "payment_method": "paypal",
         },
         "redirect_urls": {
-            "return_url": "http://localhost:8000/api/paypal/payment-success/",   
+            "return_url": f"http://localhost:8000/api/paypal/payment-success/?reservation_id={reservation_id}",   
             "cancel_url": "http://localhost:8000/api/paypal/payment-cancel/",  
         },
         "transactions": [{
             "item_list": {
                 "items": [{
-                    "name": f"Flight Reservation - {reservation.flight.departure_city} to {reservation.flight.destination_city}",
+                    "name": f"Flight Reservation - {flight.departure_city} to {flight.destination_city}",
                     "sku": "reservation",
                     "quantity": reservation.number_of_passengers,
-                    "price": str(reservation.flight.price),
+                    "price": str(flight.price),
                     "currency": "USD",   
                 }],
             },
             "amount": {
-                "total": str(reservation.flight.price * reservation.number_of_passengers),
+                "total": str(flight.price * reservation.number_of_passengers),
                 "currency": "USD",  
             },
             "description": "Flight Reservation Payment",
@@ -322,22 +353,32 @@ def initiate_paypal_payment(request, reservation_id):
     })
 
     if payment.create():
+        # Set reservation_id in the session
         request.session['reservation_id'] = reservation_id
-        return Response({"payment_url": payment.links[1].href})
+        return Response({"payment_url": f"{payment.links[1].href}?reservation_id={reservation_id}"})
     else:
         return Response({"error": payment.error})
-
 @api_view(['GET'])
 def paypal_payment_success(request):
-    payment_id = request.query_params.get('paymentId')
-    payer_id = request.query_params.get('PayerID')
-
     try:
-        payment = Payment.find(payment_id)
-        
-        if payment.state == 'created' or payment.state == 'approved':
-            if payment.execute({"payer_id": payer_id}):
-                reservation_id = request.session.get('reservation_id')   
+        payment_id = request.query_params.get('paymentId')
+        payer_id = request.query_params.get('PayerID')
+        reservation_id = request.query_params.get('reservation_id')
+
+        if payment_id and payer_id and reservation_id:
+            payment = Payment.find(payment_id)
+            
+            # Print payment state
+            print(f"Payment State: {payment.state}")
+
+            if payment.state == 'created' or payment.state == 'approved':
+                # Print stored reservation ID
+                print(f"Stored Reservation ID: {reservation_id}")
+
+                # Print details for debugging
+                print(f"Payment ID: {payment_id}")
+                print(f"Payer ID: {payer_id}")
+
                 reservation = get_object_or_404(TicketReservation, id=reservation_id)
                 
                 reservation.booking_confirmation = True
@@ -345,16 +386,157 @@ def paypal_payment_success(request):
 
                 return Response({"message": "Payment successful. Reservation confirmed."})
             else:
-                # Print detailed PayPal error information
-                print(f"PayPal error details: {payment.error}")
-                return Response({"error": f"Failed to execute payment. PayPal error: {payment.error}"})
+                return Response({"error": "Payment is not in a valid state for execution."})
         else:
-            return Response({"error": "Payment is not in a valid state for execution."})
+            return Response({"error": "Invalid or missing paymentId, PayerID, or reservation_id in the URL."})
     except Exception as e:
         # Print general exception information
-        print(f"Exception in PayPal payment execution: {str(e)}")
+        if 'payment' in locals() and hasattr(payment, 'error'):
+            print(f"PayPal error details: {payment.error}")
+
+        print(f"Exception in PayPal payment success: {str(e)}")
         return Response({"error": "Failed. Check server logs for details."})
+
 
 @api_view(['GET'])
 def paypal_payment_cancel(request):
     return Response({"message": "Payment canceled. Reservation not confirmed."})
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def user_preferences_view(request):
+    user = request.user
+
+    try:
+        preferences = UserPreferences.objects.get(user=user)
+    except UserPreferences.DoesNotExist:
+        preferences = UserPreferences.objects.create(user=user)
+
+    try:
+        
+        if request.method == 'GET':
+            serializer = UserPreferencesSerializer(preferences)
+            return Response({
+                'status': 'success',
+                'message': 'User preferences retrieved successfully',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        elif request.method == 'PUT':
+            serializer = UserPreferencesSerializer(preferences, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'status': 'success',
+                    'message': 'User preferences updated successfully',
+                    'data': serializer.data
+                }, status=status.HTTP_200_OK)
+            return Response({
+                'status': 'error',
+                'message': 'Invalid user preferences data',
+                'data': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': f'Error handling user preferences: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def airport_list_view(request):
+    try:
+        airports = Airport.objects.all()
+        serializer = AirportSerializer(airports, many=True)
+        return Response({
+            'status': 'success',
+            'message': 'List of airports retrieved successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': f'Error handling airport list: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def create_flight_review(request):
+    try:
+        serializer = FlightReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response({
+                'status': 'success',
+                'message': 'Flight review created successfully',
+                'data': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'status': 'error',
+            'message': 'Invalid flight review data',
+            'data': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': f'Error creating flight review: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def manage_flight_review(request, review_id):
+    try:
+        review = FlightReview.objects.get(id=review_id)
+        if request.method == 'GET':
+            serializer = FlightReviewSerializer(review)
+            return Response({
+                'status': 'success',
+                'message': 'Flight review retrieved successfully',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        elif request.method == 'PUT':
+            serializer = FlightReviewSerializer(review, data=request.data)
+            if serializer.is_valid():
+                serializer.save(user=request.user)
+                return Response({
+                    'status': 'success',
+                    'message': 'Flight review updated successfully',
+                    'data': serializer.data
+                }, status=status.HTTP_200_OK)
+            return Response({
+                'status': 'error',
+                'message': 'Invalid flight review data',
+                'data': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        elif request.method == 'DELETE':
+            review.delete()
+            return Response({
+                'status': 'success',
+                'message': 'Flight review deleted successfully'
+            }, status=status.HTTP_204_NO_CONTENT)
+    except FlightReview.DoesNotExist:
+        return Response({
+            'status': 'error',
+            'message': 'Flight review not found',
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': f'Error managing flight review: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+class FlightDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Flight.objects.all()
+    serializer_class = FlightSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return Response({
+                'status': 'success',
+                'message': 'Flight retrieved successfully',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': f'Error retrieving flight: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
