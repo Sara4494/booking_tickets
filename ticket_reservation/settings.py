@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-
+ 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,6 +27,8 @@ SECRET_KEY = '%)(5bq_0%(2%4%0q^b_b(i@2zmmbez)x@sfv)#le5*-=_*na+c'
 DEBUG = True
 ALLOWED_HOSTS = ['*']
 
+ 
+ 
 
  
 
@@ -37,19 +39,27 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     'users',
+    'users',
     'flights',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-   'rest_framework',
+    
+    'rest_framework',
     'rest_framework.authtoken',
-    'dj_rest_auth', 
+    'dj_rest_auth',
     'rest_framework_simplejwt',
-    'drf_yasg'
+    'drf_yasg',
+    'social_django',
+    'rest_auth',
+    'oauth2_provider',
 ]
 
+AUTHENTICATION_CLASSES = (
+    'dj_rest_auth.authentication.AllAuthJWTAuthentication',  # Use AllAuthJWTAuthentication
+    'dj_rest_auth.authentication.CsrfExemptSessionAuthentication',
+    'rest_framework.authentication.BasicAuthentication',
+)
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
         'Bearer': {
@@ -61,6 +71,7 @@ SWAGGER_SETTINGS = {
 }
 
 from datetime import timedelta
+REST_USE_JWT = True 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
@@ -78,8 +89,12 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=60),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
-}
  
+ 
+    'JWT_RESPONSE_PAYLOAD_HANDLER':
+        'rest_auth.utils.jwt_response_payload_handler',
+    'JWT_EXPIRATION_DELTA': timedelta(days=1),
+}
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -93,10 +108,13 @@ REST_FRAMEWORK = {
     ),
    
 }
+from decouple import config
+
+CLIENT_SECRET = config('CLIENT_SECRET', default='')
+CLIENT_ID = config('CLIENT_ID', default='')
 
 TOKEN_MODEL = None
  
-
 ACCOUNT_EMAIL_VERIFICATION = 'none'  
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
@@ -122,7 +140,6 @@ MIDDLEWARE = [
 ] 
  
 
-
  
 CELERY_BROKER_URL = 'redis://localhost:6379/0' 
  
@@ -139,12 +156,6 @@ SERVER_EMAIL = 'riad52166@gmail.com'
  
 
  
-
-import paypalrestsdk
-paypalrestsdk.configure({
-  "mode": "sandbox", # sandbox or live
-  "client_id": "AY40U2bOk29_l3TdcuCniVe8EiGWRNlbemNN-QTrhx6Gg4CYUeLxZxwL-2C_eVpjuhd5Mz2UumRxLIr2",
-  "client_secret": "EMoGQmjwIbWxcLyxf0eYDJmU2ZFC2Zrl-bq6HODHIrz2rzYNOXca3yerLmdowGvF2vg_wHsPF73IekEN" })
  
  
 ROOT_URLCONF = 'ticket_reservation.urls'
@@ -220,3 +231,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+
+
+
+
+ 

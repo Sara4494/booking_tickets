@@ -1,14 +1,23 @@
+from django.shortcuts import redirect, render
+from django.views import View
+from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import CustomUserSerializer, ProfileSerializer ,UserLoginSerializer
-from .models import *
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import  UserCreationForm
-from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
-from rest_framework.validators import ValidationError
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin
+from allauth.socialaccount.models import SocialAccount
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+from rest_framework.views import APIView
+from dj_rest_auth.views import LogoutView
 
- 
+from .models import CustomUser, Profile
+from .serializers import CustomUserSerializer, ProfileSerializer, UserLoginSerializer, GoogleSociaAuthViewSerializer
+
+# Custom user details view
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
@@ -58,6 +67,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
                 'status': 'error',
                 'message': f'Error deleting user: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
 
 class ProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Profile.objects.all()
@@ -182,3 +192,11 @@ class UserRegisterView(generics.CreateAPIView):
                 'status': 'error',
                 'message': f'Error registering user: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class GoogleCallbackView(View):
+    def get(self, request, *args, **kwargs):
+        # Handle the callback logic here
+        return HttpResponse("Google callback handled successfully")
+    
+
+ 
