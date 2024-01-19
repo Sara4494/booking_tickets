@@ -1,102 +1,96 @@
+# Django Flight Reservation Project
 
-# Flight Reservation System
-
-#### This Django project provides a simple flight reservation system with RESTful API endpoints. The system allows users to view available flights, make reservations, and manage their reservation history.
+This Django project is designed for managing flight reservations, user preferences, and reviews, with integrated PayPal payment functionality. Below is a breakdown of the project structure:
 
 ## Models
-### Flight Model (flights.models.Flight):
 
-#### Represents a flight with attributes such as departure_city, destination_city, departure_date, arrival_date, and price.
-## TicketReservation Model (flights.models.TicketReservation):
+### TicketReservation
+Represents a reservation with details like the user, passenger information, reservation date, etc.
 
-#### Represents a user's reservation with attributes like user, flight, passenger_name, passenger_email, reservation_date, number_of_passengers, payment_info, and booking_confirmation.
-## API Endpoints
-### Get Flights (GET /api/flights/):
+### Airport
+Represents an airport with a code, name, city, and country.
 
-- Retrieves a list of available flights.
-### Get Reservations (GET /api/reservations/):
+### UserPreferences
+Represents user preferences such as a favorite airline and preferred seat.
 
-- Retrieves a list of user reservations.
-### Filter Flights (GET /api/flights/?departure_city=&destination_city=&min_price=&max_price=&departure_date=):
+### Flight
+Represents a flight with details like airline, departure, arrival, price, and duration.
 
-- Allows filtering flights based on various parameters such as departure_city, destination_city, min_price, max_price, and departure_date.
-### Flight Detail (GET /api/flights/<flight_id>/, PUT /api/flights/<flight_id>/, DELETE /api/flights/<flight_id>/):
-- Retrieves, updates, or deletes details of a specific flight.
-### Reservation Detail (GET /api/reservations/<reservation_id>/, PUT /api/reservations/<reservation_id>/, DELETE /api/reservations/<reservation_id>/):
+### Airline
+Represents an airline with a name, code, and an optional logo.
 
--Retrieves, updates, or deletes details of a specific reservation.
-### List/Create Flights (GET /api/flights/, POST /api/flights/):
+### FlightReview
+Represents a user review for a specific flight.
 
-- Lists all flights or creates a new flight.
-### List/Create Reservations (GET /api/reservations/, POST /api/reservations/):
+## Serializers
 
-- Lists all reservations or creates a new reservation.
-### View Reservation History (GET /api/reservations/history/):
+### UserSerializer
+Serializes user-related information.
 
-- Retrieves the reservation history for the logged-in user.
-### Cancel Reservation (POST /api/reservations/<reservation_id>/cancel/):
+### TicketReservationSerializer
+Serializes ticket reservation data, including nested serializers for user and flight.
 
-- Cancels a specific reservation.
-### Modify Reservation (PUT /api/reservations/<reservation_id>/modify/):
+### UserPreferencesSerializer
+Serializes user preferences.
 
-- Modifies details of a specific reservation.
-### Initiate PayPal Payment (POST /api/paypal/initiate-payment/<reservation_id>/):
+### AirportSerializer
+Serializes airport data.
 
-- Initiates a PayPal payment for a reservation.
-### PayPal Payment Success (GET /api/paypal/payment-success/):
+### FlightReviewSerializer
+Serializes flight review data.
 
-- Handles successful PayPal payments.
-### PayPal Payment Cancel (GET /api/paypal/payment-cancel/):
+### FlightSerializer
+Serializes flight-related information.
 
-- Handles canceled PayPal payments.
+## Views
+
+### get_flights
+Retrieves a list of flights.
+
+### get_reservations
+Retrieves a list of reservations.
+
+### FlightListCreateView and FlightDetailView
+API views for listing and managing flights.
+
+### TicketReservationListCreateView and TicketReservationDetailView
+API views for listing and managing reservations.
+
+### FlightReviewView
+Views for creating and managing flight reviews.
+
+### UserBookingsView
+Retrieves bookings for a specific user.
+
+### view_reservation_history
+Retrieves reservation history for the authenticated user.
+
+### cancel_reservation
+Cancels a reservation.
+
+### modify_reservation
+Modifies a reservation.
+
+### initiate_paypal_payment, paypal_payment_success, paypal_payment_cancel
+Handles PayPal payment integration.
+
+### user_preferences_view
+Retrieves and updates user preferences.
+
+### airport_list_view
+Retrieves a list of airports.
+
 ## Middleware
-### Custom Exception Handler Middleware (flights.middleware.CustomExceptionHandlerMiddleware):
-- Catches exceptions and returns a JSON response with an error message.
+
+### TokenAuthMiddleware
+Custom middleware for handling token-based authentication.
+
 ## Celery
-### Celery Configuration (CELERY_BROKER_URL = 'redis://localhost:6379/0'):
-- Uses Celery with Redis as the message broker for handling asynchronous tasks.
-## Email Configuration
-### Email Configuration (settings.EMAIL_...):
-- Configures Gmail as the email backend for sending reservation confirmation emails.
-## PayPal Integration
-### PayPal Configuration (settings.PAYPAL_...):
-- Configures PayPal credentials for processing payments.
-## Dependencies
-### Django REST Framework (rest_framework):
 
-- Used for building the API.
-### Celery (celery):
+Uses Celery for handling background tasks. The configuration is set up in the celery.py file.
 
-- Used for handling asynchronous tasks.
-### PayPal REST SDK (paypalrestsdk):
+This project aims to provide a comprehensive solution for managing flight reservations, ensuring a seamless experience for both users and administrators.
 
-- Used for integrating PayPal payments.
-
-## Running the Project
-- Clone the repository:
-
- ```bash
-git clone  https://github.com/Sara4494/booking_tickets
-
-
- ```
-- Install dependencies:
-
- ```bash
-pip install -r requirements.txt
- ```
-
-- Apply migrations:
-
- ```bash
-python manage.py migrate
- ```
- 
-- Run the development server:
-
-
-```bash
-python manage.py runserver
 
  ```
 
